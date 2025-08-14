@@ -1,0 +1,4 @@
+[console_scripts]
+generate-mcp-tools = tooluniverse.generate_mcp_tools:run_generate
+tooluniverse-mcp = tooluniverse.mcp_server:run_server
+tooluniverse-mcp-claude = tooluniverse.mcp_server:run_claude_desktop

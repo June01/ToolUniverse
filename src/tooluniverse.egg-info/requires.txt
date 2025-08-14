@@ -1,0 +1,8 @@
+requests
+numpy
+graphql-core
+fastapi
+uvicorn
+fastmcp
+pydantic
+pyyaml

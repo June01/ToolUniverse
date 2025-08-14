@@ -1,4 +1,4 @@
-from .utils import read_json_list, evaluate_function_call, extract_function_call_json
+from .utils import read_json_list, evaluate_function_call, extract_function_call_json, extract_function_call_json_from_qwen
 import copy
 import json
 import random
@@ -147,6 +147,9 @@ class ToolUniverse:
 
     def extract_function_call_json(self, lst, return_message=False, verbose=True):
         return extract_function_call_json(lst, return_message=return_message, verbose=verbose)
+
+    def extract_function_call_json_from_qwen(self, lst, return_message=False, verbose=True):
+        return extract_function_call_json_from_qwen(lst, return_message=return_message, verbose=verbose)
 
     def call_id_gen(self):
         return "".join(random.choices(string.ascii_letters + string.digits, k=9))

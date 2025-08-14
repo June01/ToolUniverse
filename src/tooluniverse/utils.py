@@ -170,3 +170,241 @@ def extract_function_call_json(lst, return_message=False, verbose=True):
                 if return_message:
                     return None, result_str
                 return None
+
+
+def extract_function_call_json_from_qwen(lst, return_message=False, verbose=True):
+    """
+    专门处理Qwen格式的工具调用提取函数
+    
+    Qwen格式示例:
+    <think>思考内容</think>
+    <tool_call>{"name": "Tool_RAG", "arguments": {"description": "...", "limit": 1}}</tool_call>
+    
+    Args:
+        lst: 输入列表或字符串
+        return_message: 是否返回消息内容
+        verbose: 是否打印调试信息
+        
+    Returns:
+        tuple: (function_call_json, message) 或 function_call_json
+    """
+    if type(lst) is dict:
+        if return_message:
+            return lst, ""
+        return lst
+    
+    # 合并列表为字符串
+    result_str = ''.join(lst)
+    
+    if verbose:
+        print("\033[1;34mQwen LLM outputs for function call:\033[0m", result_str)
+    
+    try:
+        # 1. 尝试直接解析JSON（如果整个字符串就是JSON）
+        function_call_json = json.loads(result_str.strip())
+        if return_message:
+            return function_call_json, ""
+        return function_call_json
+    except json.JSONDecodeError:
+        pass
+    
+    try:
+        # 2. 尝试提取 <tool_call> 格式
+        tool_call_start = result_str.find('<tool_call>')
+        tool_call_end = result_str.find('</tool_call>')
+        
+        if tool_call_start != -1 and tool_call_end != -1:
+            # 提取tool_call标签内的JSON内容
+            json_start = tool_call_start + len('<tool_call>')
+            function_call_str = result_str[json_start:tool_call_end].strip()
+            
+            # 解析JSON
+            function_call_json = json.loads(function_call_str)
+            
+            if return_message:
+                # 提取think部分作为消息
+                think_start = result_str.find('<think>')
+                think_end = result_str.find('</think>')
+                if think_start != -1 and think_end != -1:
+                    think_start += len('<think>')
+                    message = result_str[think_start:think_end].strip()
+                else:
+                    # 如果没有think标签，返回tool_call之前的内容
+                    message = result_str[:tool_call_start].strip()
+                
+                return function_call_json, message
+            
+            return function_call_json
+            
+    except json.JSONDecodeError as e:
+        if verbose:
+            print(f"Failed to parse JSON in <tool_call>: {e}")
+    
+    try:
+        # 3. 尝试提取 [TOOL_CALLS] 格式（兼容原有格式）
+        index_start = result_str.find('[TOOL_CALLS]')
+        if index_start != -1:
+            index_end = result_str.find('</s>')
+            if index_end == -1:
+                index_end = result_str.find('<|eom_id|>')
+            if index_end == -1:
+                function_call_str = result_str[index_start + len('[TOOL_CALLS]'):]
+            else:
+                function_call_str = result_str[index_start + len('[TOOL_CALLS]'):index_end]
+            
+            function_call_json = json.loads(function_call_str.strip())
+            
+            if return_message:
+                message = result_str[:index_start]
+                return function_call_json, message
+            return function_call_json
+            
+    except json.JSONDecodeError as e:
+        if verbose:
+            print(f"Failed to parse JSON in [TOOL_CALLS]: {e}")
+    
+    try:
+        # 4. 尝试提取 <functioncall> 格式（兼容原有格式）
+        index_start = result_str.find('<functioncall>')
+        if index_start != -1:
+            index_start += len('<functioncall>')
+            index_end = result_str.find('</functioncall>')
+            if index_end != -1:
+                function_call_str = result_str[index_start:index_end]
+                function_call_json = json.loads(function_call_str.strip())
+                
+                if return_message:
+                    message = result_str[:result_str.find('<functioncall>')]
+                    return function_call_json, message
+                return function_call_json
+                
+    except json.JSONDecodeError as e:
+        if verbose:
+            print(f"Failed to parse JSON in <functioncall>: {e}")
+    
+    # 5. 所有格式都失败
+    if verbose:
+        print("Not a valid function call format for Qwen")
+    
+    if return_message:
+        return None, result_str
+    return None
+
+
+def extract_function_call_json_from_qwen(lst, return_message=False, verbose=True):
+    """
+    专门处理Qwen格式的工具调用提取函数
+    
+    Qwen格式示例:
+    <think>思考内容</think>
+    <tool_call>{"name": "Tool_RAG", "arguments": {"description": "...", "limit": 1}}</tool_call>
+    
+    Args:
+        lst: 输入列表或字符串
+        return_message: 是否返回消息内容
+        verbose: 是否打印调试信息
+        
+    Returns:
+        tuple: (function_call_json, message) 或 function_call_json
+    """
+    if type(lst) is dict:
+        if return_message:
+            return lst, ""
+        return lst
+    
+    # 合并列表为字符串
+    result_str = ''.join(lst)
+    
+    if verbose:
+        print("\033[1;34mQwen LLM outputs for function call:\033[0m", result_str)
+    
+    try:
+        # 1. 尝试直接解析JSON（如果整个字符串就是JSON）
+        function_call_json = json.loads(result_str.strip())
+        if return_message:
+            return function_call_json, ""
+        return function_call_json
+    except json.JSONDecodeError:
+        pass
+    
+    try:
+        # 2. 尝试提取 <tool_call> 格式
+        tool_call_start = result_str.find('<tool_call>')
+        tool_call_end = result_str.find('</tool_call>')
+        
+        if tool_call_start != -1 and tool_call_end != -1:
+            # 提取tool_call标签内的JSON内容
+            json_start = tool_call_start + len('<tool_call>')
+            function_call_str = result_str[json_start:tool_call_end].strip()
+            
+            # 解析JSON
+            function_call_json = json.loads(function_call_str)
+            
+            if return_message:
+                # 提取think部分作为消息
+                think_start = result_str.find('<think>')
+                think_end = result_str.find('</think>')
+                if think_start != -1 and think_end != -1:
+                    think_start += len('<think>')
+                    message = result_str[think_start:think_end].strip()
+                else:
+                    # 如果没有think标签，返回tool_call之前的内容
+                    message = result_str[:tool_call_start].strip()
+                
+                return function_call_json, message
+            
+            return function_call_json
+            
+    except json.JSONDecodeError as e:
+        if verbose:
+            print(f"Failed to parse JSON in <tool_call>: {e}")
+    
+    try:
+        # 3. 尝试提取 [TOOL_CALLS] 格式（兼容原有格式）
+        index_start = result_str.find('[TOOL_CALLS]')
+        if index_start != -1:
+            index_end = result_str.find('</s>')
+            if index_end == -1:
+                index_end = result_str.find('<|eom_id|>')
+            if index_end == -1:
+                function_call_str = result_str[index_start + len('[TOOL_CALLS]'):]
+            else:
+                function_call_str = result_str[index_start + len('[TOOL_CALLS]'):index_end]
+            
+            function_call_json = json.loads(function_call_str.strip())
+            
+            if return_message:
+                message = result_str[:index_start]
+                return function_call_json, message
+            return function_call_json
+            
+    except json.JSONDecodeError as e:
+        if verbose:
+            print(f"Failed to parse JSON in [TOOL_CALLS]: {e}")
+    
+    try:
+        # 4. 尝试提取 <functioncall> 格式（兼容原有格式）
+        index_start = result_str.find('<functioncall>')
+        if index_start != -1:
+            index_start += len('<functioncall>')
+            index_end = result_str.find('</functioncall>')
+            if index_end != -1:
+                function_call_str = result_str[index_start:index_end]
+                function_call_json = json.loads(function_call_str.strip())
+                
+                if return_message:
+                    message = result_str[:result_str.find('<functioncall>')]
+                    return function_call_json, message
+                return function_call_json
+                
+    except json.JSONDecodeError as e:
+        if verbose:
+            print(f"Failed to parse JSON in <functioncall>: {e}")
+    
+    # 5. 所有格式都失败
+    if verbose:
+        print("Not a valid function call format for Qwen")
+    
+    if return_message:
+        return None, result_str
+    return None
