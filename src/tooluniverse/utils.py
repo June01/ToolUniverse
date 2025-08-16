@@ -172,17 +172,18 @@ def extract_function_call_json(lst, return_message=False, verbose=True):
                 return None
 
 
-def extract_function_call_json_from_qwen(lst, return_message=False, verbose=True):
+def extract_function_call_json_from_qwen(lst, return_message=False, return_think=True, verbose=True):
     """
     专门处理Qwen格式的工具调用提取函数
     
     Qwen格式示例:
-    <think>思考内容</think>
+    <think>思考内容</think>正式回答
     <tool_call>{"name": "Tool_RAG", "arguments": {"description": "...", "limit": 1}}</tool_call>
     
     Args:
         lst: 输入列表或字符串
         return_message: 是否返回消息内容
+        return_think: 是否返回带<think>标签的内容，False时只返回</think>到<tool_call>之间的信息
         verbose: 是否打印调试信息
         
     Returns:
@@ -198,7 +199,7 @@ def extract_function_call_json_from_qwen(lst, return_message=False, verbose=True
     
     if verbose:
         print("\033[1;34mQwen LLM outputs for function call:\033[0m", result_str)
-    
+    # import pdb; pdb.set_trace()
     try:
         # 1. 尝试直接解析JSON（如果整个字符串就是JSON）
         function_call_json = json.loads(result_str.strip())
@@ -222,12 +223,16 @@ def extract_function_call_json_from_qwen(lst, return_message=False, verbose=True
             function_call_json = json.loads(function_call_str)
             
             if return_message:
-                # 提取think部分作为消息
+                # 提取think部分和think之后的内容作为消息
                 think_start = result_str.find('<think>')
                 think_end = result_str.find('</think>')
                 if think_start != -1 and think_end != -1:
-                    think_start += len('<think>')
-                    message = result_str[think_start:think_end].strip()
+                    if return_think:
+                        # 保留<think>标签，并包含think之后到tool_call之前的所有内容
+                        message = result_str[think_start:tool_call_start].strip()
+                    else:
+                        # 只返回</think>到<tool_call>之间的信息
+                        message = result_str[think_end + len('</think>'):tool_call_start].strip()
                 else:
                     # 如果没有think标签，返回tool_call之前的内容
                     message = result_str[:tool_call_start].strip()
@@ -282,10 +287,23 @@ def extract_function_call_json_from_qwen(lst, return_message=False, verbose=True
         if verbose:
             print(f"Failed to parse JSON in <functioncall>: {e}")
     
-    # 5. 所有格式都失败
+    # 5. 所有格式都失败，但检查是否有think标签
     if verbose:
         print("Not a valid function call format for Qwen")
     
     if return_message:
-        return None, result_str
+        # 检查是否有think标签，如果有则提取think标签及其后的内容
+        think_start = result_str.find('<think>')
+        think_end = result_str.find('</think>')
+        if think_start != -1 and think_end != -1:
+            if return_think:
+                # 保留<think>标签，并包含think之后的所有内容
+                message = result_str[think_start:].strip()
+            else:
+                # 只返回</think>之后的所有内容
+                message = result_str[think_end + len('</think>'):].strip()
+        else:
+            # 如果没有think标签，返回整个字符串
+            message = result_str.strip()
+        return None, message
     return None
